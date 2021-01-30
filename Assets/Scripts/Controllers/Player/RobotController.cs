@@ -1,4 +1,5 @@
 ﻿using Enums;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -11,6 +12,14 @@ public class RobotController : MonoBehaviour
     public Robot robot;
     [SerializeField]
     TextMeshProUGUI batteryText;
+
+    [HideInInspector]
+    Animator animator;
+    [SerializeField]
+    public GameObject fireAnimation;
+    [SerializeField]
+    GameObject abilityAnimation;
+
     bool isOtherRobotInRange;
     RobotController otherRobotInRange;
     float timestamp;
@@ -29,6 +38,12 @@ public class RobotController : MonoBehaviour
         Debug.Log(transform.childCount);
        
         StartRobot();
+        animator = GetComponent<Animator>();
+        if (CompareTag("CurrentRobot"))
+        {
+            fireAnimation.SetActive(true);
+            animator.enabled = true;
+        }
         rb = GetComponent<Rigidbody2D>();
         robotsLayerMask = 1 << 8;
         enemyLayerMask = 1 << 9;
@@ -65,8 +80,12 @@ public class RobotController : MonoBehaviour
     {
         otherRobotInRange = null;
         isOtherRobotInRange = false;
+        robotInControl.animator.enabled = false;
+        robotInControl.fireAnimation.SetActive(false);
         robotInControl.isActive = false;
         isActive = true;
+        animator.enabled = true;
+        fireAnimation.SetActive(true);
         tag = "CurrentRobot";
         DetectOtherRobots();
         robotInControl.tag = "Untagged";
@@ -86,14 +105,15 @@ public class RobotController : MonoBehaviour
             }
         }
     }
-
-    
    
+
     void DetectOtherRobots()
 
     {
         
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 0.5f, robotsLayerMask);
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 1.5f, robotsLayerMask);
+        List<Collider2D>  nearestRobots = new List<Collider2D>();
+        float smallestDistance;
         if (colliders.Length > 1)
         {
             isOtherRobotInRange = true;
@@ -104,7 +124,16 @@ public class RobotController : MonoBehaviour
                     Debug.Log(collider.tag);
                     if (collider.CompareTag("Untagged"))
                     {
-                        otherRobotInRange = collider.GetComponent<RobotController>();
+                        nearestRobots.Add(collider);
+                        //otherRobotInRange = collider.GetComponent<RobotController>();
+                    }
+                }
+                smallestDistance = Mathf.Infinity;
+                foreach(Collider2D collider1 in nearestRobots)
+                {
+                    if(Vector2.Distance(transform.position,collider1.transform.position) < smallestDistance)
+                    {
+                        otherRobotInRange = collider1.GetComponent<RobotController>();
                     }
                 }
                 
@@ -152,15 +181,19 @@ public class RobotController : MonoBehaviour
         {
             if (robot.robotType == RobotType.SHOCKER)
             {
-                RaycastHit2D raycastHit = Physics2D.Raycast(transform.position, transform.up, 1,enemyLayerMask);
-                Debug.DrawLine(transform.position, transform.up * 2,Color.red);
+                GameObject shock = Instantiate(abilityAnimation, transform.position, Quaternion.identity);
+                shock.transform.rotation = transform.rotation;
+                shock.transform.parent = transform;
+
+                RaycastHit2D raycastHit = Physics2D.Raycast(transform.position, transform.up, 2f,enemyLayerMask);
+                
                 if (raycastHit)
                 {
                     EnemyController enemy = raycastHit.transform.GetComponent<EnemyController>();
                     enemy.Stun(5);
                 }
                 
-                RaycastHit2D raycastHit2 = Physics2D.Raycast(transform.position + (transform.up * 0.3f), transform.up, 5, robotsLayerMask);
+                RaycastHit2D raycastHit2 = Physics2D.Raycast(transform.position + (transform.up * 0.3f), transform.up, 2.5f, robotsLayerMask);
                 if (raycastHit2)
                 {
                     
@@ -173,8 +206,8 @@ public class RobotController : MonoBehaviour
             {
                 
                 Vector2 posToInstantiate = transform.position + (transform.up * 0.5f);
-                GameObject magneticPull = Instantiate(Resources.Load("MagneticPuller") as GameObject, posToInstantiate, Quaternion.identity);
-                Collider2D[] colliders = Physics2D.OverlapCircleAll(magneticPull.transform.position, 5f, enemyLayerMask);
+                GameObject magneticPull = Instantiate(abilityAnimation, posToInstantiate, Quaternion.identity);
+                Collider2D[] colliders = Physics2D.OverlapCircleAll(magneticPull.transform.position, 4f, enemyLayerMask);
                 if(colliders.Length > 0)
                 {
                     foreach(Collider2D collider in colliders)
@@ -188,7 +221,9 @@ public class RobotController : MonoBehaviour
 
             else if(robot.robotType == RobotType.DISTURBER)
             {
-                Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 5f, enemyLayerMask);
+                GameObject wave = Instantiate(abilityAnimation, transform.position, Quaternion.identity);
+                wave.transform.parent = transform;
+                Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 4f, enemyLayerMask);
                 if (colliders.Length > 0)
                 {
                     foreach (Collider2D collider in colliders)
@@ -202,7 +237,7 @@ public class RobotController : MonoBehaviour
             }
 
 
-            timestamp = Time.time + 3;
+            timestamp = Time.time + robot.abilityCDR;
         }
       
     }
@@ -211,7 +246,7 @@ public class RobotController : MonoBehaviour
     void HandleBattery()
     {
        
-        Debug.Log(name + "  " + robot.batteryValue);
+
         robot.batteryValue -= Time.fixedDeltaTime * 4;
         batteryText.text = Mathf.Round((robot.batteryValue /robot.batteryCapacity) * 100).ToString() + "%";
         if (robot.batteryValue <= 0)

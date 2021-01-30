@@ -17,7 +17,7 @@ public class ShockerRobot : Robot
     public ShockerRobot()
     {
         robotType = RobotType.SHOCKER;
-        speed = Random.Range(0.5f, 1.3f);
+        speed = Random.Range(1.3f, 2.6f);
         batteryCapacity = Random.Range(100, 501);
         batteryValue = batteryCapacity * Random.Range(0.1f,0.99f);
         batteryDischargeRate = Random.Range(1, 51);

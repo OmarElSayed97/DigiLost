@@ -14,7 +14,7 @@ public class PullerRobot : Robot
     public PullerRobot()
     {
         robotType = RobotType.PULLER;
-        speed = Random.Range(0.35f, 1f);
+        speed = Random.Range(0.9f, 1.9f);
         batteryCapacity = Random.Range(100, 501) ;
         batteryValue = batteryCapacity * Random.Range(0.1f, 0.99f); ;
         batteryDischargeRate = Random.Range(1, 51);

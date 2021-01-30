@@ -61,9 +61,27 @@ public class EnemyController : MonoBehaviour
        
         if (collision.CompareTag("CurrentRobot"))
         {
-            Destroy(collision.gameObject, 1.5f);
+           
+            Destroy(collision.gameObject, 0.5f);
         }
         else if (collision.CompareTag("Enemy"))
+        {
+            if (isPulled)
+            {
+                Debug.Log("IS DYING");
+                Destroy(gameObject);
+            }
+        }
+    }
+
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (collision.transform.CompareTag("CurrentRobot"))
+        {
+            Debug.Log("IS DYING");
+            Destroy(collision.gameObject, 0.5f);
+        }
+        else if (collision.transform.CompareTag("Enemy"))
         {
             if (isPulled)
             {

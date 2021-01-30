@@ -12,7 +12,7 @@ public class DisturberRobot : Robot
     public DisturberRobot()
     {
         robotType = RobotType.DISTURBER;
-        speed = Random.Range(0.8f, 1.75f);
+        speed = Random.Range(1.7f, 2.4f);
         batteryCapacity = Random.Range(100, 501);
         batteryValue = batteryCapacity * Random.Range(0.1f, 0.99f); ;
         batteryDischargeRate = Random.Range(1, 51);
