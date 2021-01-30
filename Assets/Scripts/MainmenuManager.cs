@@ -19,15 +19,20 @@ public class MainmenuManager : MonoBehaviour
     public void Next()
     {
         index++;
+        Debug.Log(index);
         if(index == Panels.Length)
         {
             SceneManager.LoadScene(1);
         }
-        foreach(GameObject go in Panels)
+        else
         {
-            go.SetActive(false);
-        }
+            foreach (GameObject go in Panels)
+            {
+                go.SetActive(false);
+            }
 
-        Panels[index].SetActive(true);
+            Panels[index].SetActive(true);
+        }
+       
     }
 }

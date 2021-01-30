@@ -10,17 +10,21 @@ public class EnemyController : MonoBehaviour
     private Vector2 target;
     [SerializeField]
     public float speed = 0.5f;
+    [SerializeField]
+    int roomInAction;
     PlayerManager playerInstance;
+    AudioManager audioManager;
     bool isStunned;
     bool isPulled;
     bool isSlowed;
+    bool isDestroying;
     Transform magneticPull;
     Rigidbody2D rb;
     void Start()
     {
         target = GameObject.FindGameObjectWithTag("CurrentRobot").transform.position;
         playerInstance = PlayerManager.instance;
-       
+        audioManager = AudioManager.Instance;
         rb = GetComponent<Rigidbody2D>();
        
     }
@@ -28,7 +32,7 @@ public class EnemyController : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (!isStunned && !isPulled)
+        if (!isStunned && !isPulled && (roomInAction == playerInstance.currentRoom))
         {
             TrackTarget();
         }
@@ -54,6 +58,9 @@ public class EnemyController : MonoBehaviour
     {
         target = playerInstance.playerPos;
         transform.position = Vector2.MoveTowards(transform.position, target,speed * Time.deltaTime);
+        Vector2 lookDir = target - rb.position;
+        float angle = Mathf.Atan2(lookDir.y, lookDir.x) * Mathf.Rad2Deg - 90f;
+        rb.rotation = angle;
     }
 
     private void OnTriggerEnter2D(Collider2D collision)
@@ -61,14 +68,19 @@ public class EnemyController : MonoBehaviour
        
         if (collision.CompareTag("CurrentRobot"))
         {
-           
-            Destroy(collision.gameObject, 0.5f);
+            if (!isDestroying)
+            {
+                audioManager.Play("Explode");
+                StartCoroutine(DestroyPlayer(collision.gameObject));
+            }
+          
+
         }
         else if (collision.CompareTag("Enemy"))
         {
             if (isPulled)
             {
-                Debug.Log("IS DYING");
+               
                 Destroy(gameObject);
             }
         }
@@ -79,7 +91,8 @@ public class EnemyController : MonoBehaviour
         if (collision.transform.CompareTag("CurrentRobot"))
         {
             Debug.Log("IS DYING");
-            Destroy(collision.gameObject, 0.5f);
+            audioManager.Play("Explode");
+            StartCoroutine(DestroyPlayer(collision.gameObject));
         }
         else if (collision.transform.CompareTag("Enemy"))
         {
@@ -141,6 +154,23 @@ public class EnemyController : MonoBehaviour
         yield return new WaitForSeconds(3.5f);
         speed = speed * 2.5f;
         isSlowed = false;
+    }
+
+    IEnumerator DestroyPlayer(GameObject player)
+    {
+        Debug.Log("IS DYING");
+        isDestroying = true;
+        yield return new WaitForSeconds(0.7f);
+        if(player!= null)
+        {
+            if (player.CompareTag("CurrentRobot"))
+            {
+                playerInstance.isDead = true;
+                Destroy(player);
+            }
+        }
+      
+        isDestroying = false;
     }
 
 

@@ -28,15 +28,15 @@ public class RobotController : MonoBehaviour
     Rigidbody2D rb;
 
     PlayerManager playerInstance;
+    AudioManager audioManager;
 
     int robotsLayerMask;
     int enemyLayerMask;
+    [SerializeField]
+    public int roomNumber;
+    bool isWon;
     void Start()
-    {
-        
-       
-        Debug.Log(transform.childCount);
-       
+    { 
         StartRobot();
         animator = GetComponent<Animator>();
         if (CompareTag("CurrentRobot"))
@@ -48,6 +48,7 @@ public class RobotController : MonoBehaviour
         robotsLayerMask = 1 << 8;
         enemyLayerMask = 1 << 9;
         playerInstance = PlayerManager.instance;
+        audioManager = AudioManager.Instance;
     }
 
     // Update is called once per frame
@@ -59,6 +60,9 @@ public class RobotController : MonoBehaviour
             GetAxisInput();
             UseAbility();
             HandleBattery();
+            playerInstance.batteryValue = (int)((robot.batteryValue/robot.batteryCapacity) * 100);
+          
+            playerInstance.hasWon = isWon;
         }
       
        
@@ -78,6 +82,7 @@ public class RobotController : MonoBehaviour
 
     public void Activate(RobotController robotInControl)
     {
+        audioManager.Play("Hack");
         otherRobotInRange = null;
         isOtherRobotInRange = false;
         robotInControl.animator.enabled = false;
@@ -87,7 +92,7 @@ public class RobotController : MonoBehaviour
         animator.enabled = true;
         fireAnimation.SetActive(true);
         tag = "CurrentRobot";
-        DetectOtherRobots();
+        //DetectOtherRobots();
         robotInControl.tag = "Untagged";
 
     }
@@ -111,9 +116,10 @@ public class RobotController : MonoBehaviour
 
     {
         
-        Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 1.5f, robotsLayerMask);
+        Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 2f, robotsLayerMask);
         List<Collider2D>  nearestRobots = new List<Collider2D>();
         float smallestDistance;
+        RobotController robotController;
         if (colliders.Length > 1)
         {
             isOtherRobotInRange = true;
@@ -121,23 +127,25 @@ public class RobotController : MonoBehaviour
             {
                 foreach(Collider2D collider in colliders)
                 {
-                    Debug.Log(collider.tag);
-                    if (collider.CompareTag("Untagged"))
+                    robotController = collider.GetComponent<RobotController>();
+                    if (collider.CompareTag("Untagged") && (robotController.roomNumber == playerInstance.currentRoom))
                     {
                         nearestRobots.Add(collider);
-                        //otherRobotInRange = collider.GetComponent<RobotController>();
+                        otherRobotInRange = collider.GetComponent<RobotController>();
                     }
                 }
-                smallestDistance = Mathf.Infinity;
-                foreach(Collider2D collider1 in nearestRobots)
-                {
-                    if(Vector2.Distance(transform.position,collider1.transform.position) < smallestDistance)
-                    {
-                        otherRobotInRange = collider1.GetComponent<RobotController>();
-                    }
-                }
-                
-               
+
+                //smallestDistance = Mathf.Infinity;
+                //foreach (Collider2D collider1 in nearestRobots)
+                //{
+                //    if (Vector2.Distance(transform.position, collider1.transform.position) < smallestDistance)
+                //    {
+                //        otherRobotInRange = collider1.GetComponent<RobotController>();
+                //    }
+                //}
+
+
+
             }
 
         }
@@ -181,11 +189,12 @@ public class RobotController : MonoBehaviour
         {
             if (robot.robotType == RobotType.SHOCKER)
             {
+                audioManager.Play("Shock");
                 GameObject shock = Instantiate(abilityAnimation, transform.position, Quaternion.identity);
                 shock.transform.rotation = transform.rotation;
                 shock.transform.parent = transform;
 
-                RaycastHit2D raycastHit = Physics2D.Raycast(transform.position, transform.up, 2f,enemyLayerMask);
+                RaycastHit2D raycastHit = Physics2D.Raycast(transform.position, transform.up, 3f,enemyLayerMask);
                 
                 if (raycastHit)
                 {
@@ -204,8 +213,8 @@ public class RobotController : MonoBehaviour
             }
             else if(robot.robotType == RobotType.PULLER)
             {
-                
-                Vector2 posToInstantiate = transform.position + (transform.up * 0.5f);
+                audioManager.Play("Magnet");
+                Vector2 posToInstantiate = transform.position + (transform.up * 1.5f);
                 GameObject magneticPull = Instantiate(abilityAnimation, posToInstantiate, Quaternion.identity);
                 Collider2D[] colliders = Physics2D.OverlapCircleAll(magneticPull.transform.position, 4f, enemyLayerMask);
                 if(colliders.Length > 0)
@@ -221,9 +230,10 @@ public class RobotController : MonoBehaviour
 
             else if(robot.robotType == RobotType.DISTURBER)
             {
+                audioManager.Play(0);
                 GameObject wave = Instantiate(abilityAnimation, transform.position, Quaternion.identity);
                 wave.transform.parent = transform;
-                Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 4f, enemyLayerMask);
+                Collider2D[] colliders = Physics2D.OverlapCircleAll(transform.position, 2f, enemyLayerMask);
                 if (colliders.Length > 0)
                 {
                     foreach (Collider2D collider in colliders)
@@ -231,6 +241,18 @@ public class RobotController : MonoBehaviour
                         EnemyController enemy = collider.transform.GetComponent<EnemyController>();
                         enemy.Slow();
 ;
+                    }
+
+                }
+                
+                Collider2D[] colliders2 = Physics2D.OverlapCircleAll(transform.position, 4f, 1 << 10);
+                if (colliders2.Length > 0)
+                {
+                    foreach (Collider2D collider1 in colliders2)
+                    {
+                        DoorController door = collider1.transform.GetComponent<DoorController>();
+                        door.Open();
+                        
                     }
 
                 }
@@ -252,6 +274,7 @@ public class RobotController : MonoBehaviour
         if (robot.batteryValue <= 0)
         {
             Destroy(gameObject);
+            audioManager.Play("Explode");
         }
         else if (robot.batteryValue > robot.batteryCapacity)
             robot.batteryValue = robot.batteryCapacity;
@@ -277,6 +300,26 @@ public class RobotController : MonoBehaviour
         }
 
 
+    }
+
+    private void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Door"))
+        {
+            roomNumber++;
+            Debug.Log(roomNumber);
+            isOtherRobotInRange = false;
+            otherRobotInRange = null;
+            DetectOtherRobots();
+        }
+    }
+
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Finish"))
+        {
+            isWon = true;
+        }
     }
 
 

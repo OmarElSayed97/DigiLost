@@ -70,7 +70,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_Sprite: {fileID: 21300000, guid: 60661a81cb225fa4395df19f6cd13acb, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
@@ -162,7 +162,7 @@ MonoBehaviour:
     abilityCDR: 0
   batteryText: {fileID: 0}
   fireAnimation: {fileID: 6490802364610178900}
-  abilityAnimation: {fileID: 1264005673166226232, guid: dec35e48d1fa010499e90168fc318583, type: 3}
+  abilityAnimation: {fileID: 1925427302324755930, guid: dec35e48d1fa010499e90168fc318583, type: 3}
 --- !u!61 &6490802364410834913
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -279,7 +279,7 @@ SpriteRenderer:
   m_LightmapParameters: {fileID: 0}
   m_SortingLayerID: 0
   m_SortingLayer: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 1
   m_Sprite: {fileID: 21300000, guid: fd2edd1d686017c4f9f48fac47ef885f, type: 3}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
